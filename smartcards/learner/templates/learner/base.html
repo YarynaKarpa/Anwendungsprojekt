@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}Lernkartei{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css"/>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><span class="dot"></span><h1>Smartcards · Learner</h1></a>
+    <nav>
+      <a href="{% url 'learner:menu' %}" class="btn">Start</a>
+      <a href="{% url 'learner:subject_select' %}" class="btn">1.1 Fach wählen</a>
+      <a href="{% url 'learner:subject_new' %}" class="btn">1.2 Fach neu anlegen</a>
+      <a href="{% url 'learner:actions' %}" class="btn">2. Aktionen</a>
+      <a href="/poster/" class="btn">Poster</a>
+      <button id="theme-toggle" class="theme-toggle" title="Theme wechseln">☼</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer>
+  <div class="wrap">
+    <small class="muted">Demo · In-Memory-Daten (später DB/Import)</small>
+  </div>
+</footer>
+</body>
+</html>

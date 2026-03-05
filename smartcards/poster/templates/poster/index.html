@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Poster · TXT → Cards (with Subject)</title>
+  <link rel="stylesheet" href="/static/styles.css"/>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><span class="dot"></span><h1>Smartcards · Poster</h1></a>
+    <nav>
+      <a class="btn" href="/learner/">Learner</a>
+      <button id="theme-toggle" class="theme-toggle" title="Toggle theme">☼</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <h2 style="margin:0 0 6px">Upload TXT → Set Subject → Save to DB</h2>
+    <p class="muted">TXT format (repeat blocks):</p>
+    <pre class="copybox" style="margin-top:8px"><code>&lt;question&gt;
+What is photosynthesis?
+&lt;/&gt;
+&lt;answer&gt;
+Conversion of light energy to chemical energy in plants.
+&lt;/&gt;</code></pre>
+
+    {% if error %}
+      <div class="card" style="border-left:4px solid var(--danger); margin:12px 0; padding:12px">
+        <strong>Error:</strong> {{ error }}
+        {% if form.errors %}
+          <ul style="margin:8px 0 0 18px">
+            {% for field, errs in form.errors.items %}
+              <li><strong>{{ field }}:</strong> {{ errs|striptags }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if saved_count %}
+      <div class="card" style="border-left:4px solid var(--success); margin:12px 0; padding:12px">
+        <strong>Saved:</strong> {{ saved_count }} card(s) stored in the database.
+      </div>
+    {% endif %}
+
+    <form id="uploadForm" method="post" enctype="multipart/form-data" style="margin-top:14px">{% csrf_token %}
+      <div class="grid cols-2">
+        <div class="panel" style="padding:14px">
+          <label>Subject (required)</label>
+          {{ form.subject }}
+        </div>
+        <div class="panel" style="padding:14px">
+          <label>TXT file</label>
+          {{ form.txt }}
+          <p class="muted" style="margin:.5rem 0 0">Accepted: .txt (UTF-8). Whitespace is trimmed.</p>
+        </div>
+      </div>
+      <div class="btn-row" style="justify-content:flex-end; margin-top:12px">
+        <button id="parseBtn" class="btn primary" type="submit">Upload & Save</button>
+      </div>
+    </form>
+  </section>
+
+  {% if cards %}
+  <section class="card">
+    <div class="btn-row" style="justify-content:space-between; align-items:center">
+      <h3 style="margin:0">Preview ({{ cards|length }})</h3>
+      <button id="copyJsonBtn" class="btn" type="button">Copy JSON</button>
+    </div>
+    <pre id="cardsJson" class="copybox" style="margin-top:12px">{{ cards_json }}</pre>
+  </section>
+
+  <section class="card">
+    <h3>Cards</h3>
+    <div class="grid cards" style="margin-top:10px">
+      {% for c in cards %}
+      <article class="kcard card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+          <span class="pill">{{ c.type|upper }}</span>
+          {% if c.subject %}<span class="pill">{{ c.subject }}</span>{% endif %}
+        </div>
+        <h4>Question</h4>
+        <p>{{ c.question|linebreaksbr }}</p>
+        {% if c.expected %}
+          <h4>Answer</h4>
+          <p class="muted">{{ c.expected|linebreaksbr }}</p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</main>
+
+<footer>
+  <div class="wrap">
+    <small class="muted">Poster · TXT import with subject → DB</small>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    // Prevent empty submit
+    const form = document.getElementById('uploadForm');
+    const btn  = document.getElementById('parseBtn');
+    const input = document.getElementById('txt-input');
+
+    if (form && btn && input) {
+      form.addEventListener('submit', (e) => {
+        const subject = form.querySelector('input[name="subject"]');
+        if (!input.files?.length || !subject?.value.trim()) {
+          e.preventDefault();
+          btn.blur();
+          btn.textContent = 'Subject + TXT required';
+          setTimeout(()=> btn.textContent = 'Upload & Save', 1200);
+        }
+      });
+    }
+
+    // Copy JSON
+    const copy = document.getElementById('copyJsonBtn');
+    if (copy) {
+      copy.addEventListener('click', () => {
+        const box = document.getElementById('cardsJson');
+        if (!box) return;
+        navigator.clipboard.writeText(box.innerText).then(() => {
+          copy.textContent = 'Copied!';
+          setTimeout(()=> copy.textContent = 'Copy JSON', 1200);
+        });
+      });
+    }
+  })();
+</script>
+</body>
+</html>

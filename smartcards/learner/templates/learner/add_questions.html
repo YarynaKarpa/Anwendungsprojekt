@@ -1,0 +1,69 @@
+{% extends 'learner/base.html' %}
+{% block title %}Fragen anlegen{% endblock %}
+{% block content %}
+<h2>3. Fragen anlegen – Fragetyp wählen</h2>
+<p>
+  <a href="?type=single" class="btn">2.1.1 Auswahl</a>
+  <a href="?type=multi" class="btn">2.1.3 Mehrere Antworten</a>
+  <a href="?type=text" class="btn">2.1.2 Text</a>
+</p>
+
+{% if kind == 'multi' %}
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="kind" value="multi" />
+  <label>Fach-ID (z.B. bio)
+    <input name="subject_id" placeholder="bio" />
+  </label>
+  <label>Frage
+    <textarea name="question" rows="3" placeholder="Deine Frage…"></textarea>
+  </label>
+  <fieldset>
+    <legend>Optionen</legend>
+    <label>A <input name="opt_a" /> <input type="checkbox" name="is_a" /> richtig</label>
+    <label>B <input name="opt_b" /> <input type="checkbox" name="is_b" /> richtig</label>
+    <label>C <input name="opt_c" /> <input type="checkbox" name="is_c" /> richtig</label>
+    <label>D <input name="opt_d" /> <input type="checkbox" name="is_d" /> richtig</label>
+  </fieldset>
+  <button class="btn primary">Frage speichern</button>
+</form>
+{% elif kind == 'text' %}
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="kind" value="text" />
+  <label>Fach-ID (z.B. bio)
+    <input name="subject_id" placeholder="bio" />
+  </label>
+  <label>Begriff/Frage
+    <textarea name="question" rows="3"></textarea>
+  </label>
+  <label>Erwartete Antwort
+    <textarea name="expected" rows="3"></textarea>
+  </label>
+  <button class="btn primary">Frage speichern</button>
+</form>
+{% else %}
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="kind" value="single" />
+  <label>Fach-ID (z.B. bio)
+    <input name="subject_id" placeholder="bio" />
+  </label>
+  <label>Frage
+    <textarea name="question" rows="3" placeholder="Deine Frage…"></textarea>
+  </label>
+  <fieldset>
+    <legend>Antwortoptionen</legend>
+    <label>Option A <input name="opt_a" /></label>
+    <label>Option B <input name="opt_b" /></label>
+    <label>Option C <input name="opt_c" /></label>
+    <label>Option D <input name="opt_d" /></label>
+    <label>Richtig
+      <select name="correct">
+        <option>A</option><option>B</option><option>C</option><option>D</option>
+      </select>
+    </label>
+  </fieldset>
+  <button class="btn primary">Frage speichern</button>
+</form>
+{% endif %}
+
+<p class="hint">Diese Minimalversion speichert im Arbeitsspeicher.</p>
+{% endblock %}

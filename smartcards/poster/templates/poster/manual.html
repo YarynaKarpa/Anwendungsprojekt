@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Poster · Manuelle Karte</title>
+  <link rel="stylesheet" href="/static/styles.css"/>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><span class="dot"></span><h1>Smartcards · Poster</h1></a>
+    <nav>
+      <a class="btn" href="{% url 'poster:index' %}">← Zurück zu PDF</a>
+      <a class="btn" href="/learner/">Learner</a>
+      <button id="theme-toggle" class="theme-toggle" title="Theme wechseln">☼</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="btn-row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
+      <h2 style="margin:0">Manuelle Karte erstellen</h2>
+      <span class="pill">Session-Sammlung</span>
+    </div>
+
+    <form method="post" class="grid cols-2">{% csrf_token %}
+      <div class="panel" style="padding:14px">
+        <label>Fach (optional)</label>
+        {{ form.subject }}
+      </div>
+      <div class="panel" style="padding:14px">
+        <label>Fragetyp</label>
+        {{ form.type }}
+      </div>
+
+      <div class="panel" style="grid-column: 1/-1; padding:14px">
+        <label>Frage / Begriff</label>
+        {{ form.question }}
+      </div>
+
+      <div class="panel" style="grid-column: 1/-1; padding:14px">
+        <fieldset>
+          <legend>Freitext (nur bei Typ „Text“)</legend>
+          {{ form.expected }}
+        </fieldset>
+      </div>
+
+      <div class="panel" style="padding:14px">
+        <fieldset>
+          <legend>Optionen (Single/Multi)</legend>
+          <label>A {{ form.opt_a }}</label>
+          <label>B {{ form.opt_b }}</label>
+          <label>C {{ form.opt_c }}</label>
+          <label>D {{ form.opt_d }}</label>
+        </fieldset>
+      </div>
+
+      <div class="panel" style="padding:14px">
+        <fieldset>
+          <legend>Richtig</legend>
+          <label>Single: {{ form.correct_single }}</label>
+          <div class="btn-row" style="margin-top:6px">
+            <label>{{ form.correct_multi_a }} A</label>
+            <label>{{ form.correct_multi_b }} B</label>
+            <label>{{ form.correct_multi_c }} C</label>
+            <label>{{ form.correct_multi_d }} D</label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div style="grid-column: 1/-1; display:flex; justify-content:flex-end; gap:10px">
+        <button class="btn primary">Speichern</button>
+      </div>
+    </form>
+
+    {% if created %}
+      <p style="margin-top:12px; color:var(--success); font-weight:700">
+        Karte gespeichert. Insgesamt {{ cards_count }} Karten in der Session.
+      </p>
+    {% endif %}
+  </section>
+
+  {% if cards_json %}
+    <section class="card" style="margin-top:16px">
+      <div class="btn-row" style="justify-content:space-between; align-items:center">
+        <h3 style="margin:0">Gesammelte Karten (JSON)</h3>
+        <button id="copyBtn" class="btn">JSON kopieren</button>
+      </div>
+      <pre id="jsonBox" class="copybox" style="margin-top:10px">{{ cards_json }}</pre>
+    </section>
+  {% endif %}
+</main>
+
+<footer>
+  <div class="wrap">
+    <small class="muted">Poster · Manuelle Erfassung</small>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    const btn = document.getElementById('copyBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const box = document.getElementById('jsonBox');
+        if (!box) return;
+        navigator.clipboard.writeText(box.innerText).then(() => {
+          btn.textContent = 'Kopiert!';
+          setTimeout(()=> btn.textContent = 'JSON kopieren', 1200);
+        });
+      });
+    }
+  })();
+</script>
+</body>
+</html>

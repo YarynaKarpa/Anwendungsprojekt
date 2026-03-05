@@ -1,0 +1,23 @@
+{% extends 'learner/base.html' %}
+{% block title %}Fach wählen{% endblock %}
+{% block content %}
+<h2>1.1 Fach wählen</h2>
+<form method="get" action="">
+  <label>Fach suchen
+    <input name="q" type="search" value="{{ q }}" placeholder="z.B. Biologie, Mathe, Geschichte" />
+  </label>
+  <button class="btn">Suchen</button>
+</form>
+<ul>
+  {% for s in subjects %}
+    <li>{{ s.name }}</li>
+  {% empty %}
+    <li>Keine Fächer gefunden.</li>
+  {% endfor %}
+</ul>
+<p class="hint">(In der Demo sind Fächer im Speicher vordefiniert.)</p>
+<div class="btn-row">
+  <a href="{% url 'learner:actions' %}" class="btn">Weiter zu 2. Aktionen</a>
+  <a href="{% url 'learner:menu' %}" class="btn">Zurück</a>
+</div>
+{% endblock %}

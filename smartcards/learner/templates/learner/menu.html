@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Lernen – Fächer</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:#0b1020;color:#e8eef8}
+    .wrap{max-width:880px;margin:0 auto;padding:24px}
+    header{border-bottom:1px solid #223;background:#0b1020;position:sticky;top:0}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    a.tile{display:block;background:#131a2b;border:1px solid #223;border-radius:16px;padding:14px;color:#e8eef8;text-decoration:none}
+    .pill{display:inline-block;font-size:12px;border:1px solid #334;padding:4px 8px;border-radius:999px;color:#a7b1c7}
+    section{background:#131a2b;border:1px solid #223;border-radius:16px;padding:18px;margin-top:18px}
+  </style>
+</head>
+<body>
+<header><div class="wrap"><h1><a href="/" style="color:#e8eef8;text-decoration:none">⟵</a> Learner · Fächer</h1></div></header>
+<main class="wrap">
+  <section>
+    <h2>Wähle ein Fach</h2>
+    {% if subjects %}
+      <div class="grid" style="margin-top:12px">
+        {% for s in subjects %}
+          <a class="tile" href="{% url 'learner:study' s.subject|urlencode %}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span>{{ s.subject|default:"(Ohne Fach)" }}</span>
+              <span class="pill">{{ s.total }} Karten</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Keine Fächer vorhanden. Bitte unter <a href="/poster/" style="color:#9cf">Poster</a> TXT hochladen.</p>
+    {% endif %}
+  </section>
+</main>
+</body>
+</html>

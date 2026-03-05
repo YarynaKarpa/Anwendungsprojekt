@@ -1,0 +1,17 @@
+{% extends 'learner/base.html' %}
+{% block title %}Fach neu anlegen{% endblock %}
+{% block content %}
+<h2>1.2 Fach neu anlegen</h2>
+<form method="post">{% csrf_token %}
+  <label>Fachname
+    <input name="name" type="text" required />
+  </label>
+  <label>Beschreibung (optional)
+    <textarea name="description" rows="3"></textarea>
+  </label>
+  <div class="btn-row">
+    <button class="btn primary">Speichern &amp; weiter</button>
+    <a href="{% url 'learner:menu' %}" class="btn">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}
