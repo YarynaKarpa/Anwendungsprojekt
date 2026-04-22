@@ -39,41 +39,43 @@
     <div class="q">{{ card.question|linebreaksbr }}</div>
 
     <!-- Notizen -->
-    <div id="notes-wrap" class="card" style="margin-top:12px;"
-         data-question-id="{{ card.id }}">
-      <label for="study-note" style="display:block;font-size:12px;color:#a7b1c7;margin-bottom:6px;">Notizen</label>
-      <textarea id="study-note"
-                placeholder="Deine Notizen zu dieser Frage…"
-                style="width:100%;min-height:120px;padding:10px;border:1px solid #3a415a;border-radius:10px;background:#0f1426;color:#e8eef8;"></textarea>
-      <div id="note-status" class="muted" style="font-size:12px;margin-top:6px;">Lädt …</div>
+    <div id="notes-wrap" class="card" style="margin-top:12px;" data-question-id="{{ card.id }}">
+      <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <label style="font-size:12px;color:#a7b1c7;">Notizen (automatisch gespeichert)</label>
+        <div class="row" style="gap: 5px;">
+          <span class="stat-badge">✅ <span id="stat-correct">{{ total_correct }}</span></span>
+          <span class="stat-badge">❌ <span id="stat-wrong">{{ total_wrong }}</span></span>
+        </div>
+      </div>
+      <textarea id="study-note" style="width:100%;min-height:100px;padding:10px;border:1px solid #3a415a;border-radius:10px;background:#0f1426;color:#e8eef8;"></textarea>
+      <div id="note-status" class="muted" style="font-size:11px;margin-top:4px;">Lädt...</div>
     </div>
 
     {% if revealed %}
       <!-- Antwort -->
       <div class="a">{{ card.answer|linebreaksbr }}</div>
 
-      <!-- Controls shown AFTER reveal -->
-      <div class="row" style="margin-top:14px; justify-content:space-between">
-        <form method="post">{% csrf_token %}
-          <button class="btn" name="back" value="1">← Zurück</button>
-        </form>
-        <form method="post">{% csrf_token %}
-          <button class="btn" name="repeat" value="1">⟲ Wiederholen</button>
-        </form>
-        <form method="post">{% csrf_token %}
-          <button class="btn" name="next" value="1">Weiter →</button>
-        </form>
+      <!-- Selbstbewertung -->
+      <div class="selbstbewertung-container" style="margin-top:20px; text-align:center; padding: 10px; border-top: 1px solid #333;">
+        <p class="muted" style="font-size: 0.9em; margin-bottom: 8px;">Wie war deine Antwort?</p>
+        <div class="row" style="justify-content:center; gap: 10px;">
+          <button type="button" class="btn s-btn" data-val="1" style="border-color:#ff4444;">❌ Falsch</button>
+          <button type="button" class="btn s-btn" data-val="2" style="border-color:#ffbb33;">⚠️ Fast</button>
+          <button type="button" class="btn s-btn" data-val="3" style="border-color:#00C851;">✅ Richtig</button>
+        </div>
       </div>
 
-    {% else %}
-      <!-- Controls BEFORE reveal -->
       <div class="row" style="margin-top:14px; justify-content:space-between">
-        <form method="post">{% csrf_token %}
-          <button class="btn" name="back" value="1">← Zurück</button>
-        </form>
-        <form method="post">{% csrf_token %}
-          <button class="btn" name="reveal" value="1">Antwort anzeigen</button>
-        </form>
+        <form method="post">{% csrf_token %}<button class="btn" name="back" value="1">← Zurück</button></form>
+        <div class="row">
+          <form method="post">{% csrf_token %}<button class="btn" name="repeat" value="1">⟲ Wiederholen</button></form>
+          <form method="post">{% csrf_token %}<button class="btn" name="next" value="1">Weiter →</button></form>
+        </div>
+      </div>
+    {% else %}
+      <div class="row" style="margin-top:14px; justify-content:space-between">
+        <form method="post">{% csrf_token %}<button class="btn" name="back" value="1">← Zurück</button></form>
+        <form method="post">{% csrf_token %}<button class="btn" name="reveal" value="1">Antwort anzeigen</button></form>
       </div>
     {% endif %}
   </section>
@@ -93,67 +95,96 @@
 </div>
 
 <script>
-  // ESC → Schließen
-  (function(){
+// ESC → Schließen
+(function(){
     const overlay = document.getElementById('doneOverlay');
     if (!overlay) return;
-    window.addEventListener('keydown', (e)=>{
+    window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && overlay.classList.contains('show')) {
         window.location.href = "{% url 'learner:menu' %}";
       }
     });
   })();
 
-  // Notizen
+  // 2. Notizen & Selbstbewertung (Dauerhafte Speicherung)
   (function() {
     const wrap = document.getElementById("notes-wrap");
-    const questionId = wrap?.dataset?.questionId;
-    if (!questionId) return;
+    if (!wrap) return;
 
+    const questionId = wrap.dataset.questionId;
     const endpoint = `/learner/api/notes/${encodeURIComponent(questionId)}/`;
     const textarea = document.getElementById("study-note");
     const statusEl = document.getElementById("note-status");
+    const selbstbewertungBtns = document.querySelectorAll('.s-btn');
 
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    // CSRF-Token aus den Cookies lesen
+    const csrftoken = document.cookie.split('; ')
+      .find(row => row.startsWith('csrftoken='))?.split('=')[1];
+
+    // Hilfsfunktion: UI mit Daten vom Server aktualisieren
+    
+    function updateUI(data) {
+      if (data.text !== undefined && document.activeElement !== textarea) {
+        textarea.value = data.text;
+      }
+      if (data.selbstbewertung !== undefined) {
+        selbstbewertungBtns.forEach(btn => {
+          btn.style.border = (btn.dataset.val == data.selbstbewertung) 
+            ? "2px solid white" 
+            : "1px solid #3a415a";
+        });
+      }
+      if (data.total_correct !== undefined) {
+            document.getElementById("stat-correct").textContent = data.total_correct;
+      }
+      if (data.total_wrong !== undefined) {
+            document.getElementById("stat-wrong").textContent = data.total_wrong;
+      }
     }
-    const csrftoken = getCookie('csrftoken');
 
+    // A. SOFORT BEIM LADEN: Bestehende Notiz aus der DB holen
     fetch(endpoint, { credentials: "same-origin" })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(r => r.json())
       .then(d => {
-        textarea.value = d.text || "";
-        statusEl.textContent = d.updated_at
-          ? `Zuletzt gespeichert: ${new Date(d.updated_at).toLocaleString()}`
-          : "Bereit.";
-      })
-      .catch(() => { statusEl.textContent = "Konnte Notizen nicht laden."; });
+        updateUI(d);
+        statusEl.textContent = "Notizen geladen.";
+      });
 
-    let timer = null;
-    function save(text) {
-      statusEl.textContent = "Speichern …";
+    // B. SPEICHER-FUNKTION (wird für Text und Buttons genutzt)
+    function saveToServer(payload) {
+      statusEl.textContent = "Speichere...";
       fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken
+        headers: { 
+          "Content-Type": "application/json", 
+          "X-CSRFToken": csrftoken 
         },
-        credentials: "same-origin",
-        body: JSON.stringify({ text })
+        body: JSON.stringify(payload)
       })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(r => r.json())
       .then(d => {
-        statusEl.textContent = `Gespeichert: ${new Date(d.updated_at).toLocaleTimeString()}`;
-      })
-      .catch(() => { statusEl.textContent = "Fehler beim Speichern."; });
+        updateUI(d);
+        statusEl.textContent = "Gespeichert.";
+      });
     }
 
+    // C. TEXT-INPUT: Sofort speichern, wenn User aufhört zu tippen
+    let timer = null;
     textarea.addEventListener("input", () => {
       clearTimeout(timer);
-      timer = setTimeout(() => save(textarea.value), 600);
+      statusEl.textContent = "Tippe...";
+      timer = setTimeout(() => {
+        saveToServer({ text: textarea.value });
+      }, 600); // 0,6 Sekunden warten nach dem letzten Tastendruck
     });
+
+    // D. BUTTONS: Selbstbewertung speichern
+    selbstbewertungBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        saveToServer({ selbstbewertung: btn.dataset.val });
+      });
+    });
+
   })();
 </script>
 </body>

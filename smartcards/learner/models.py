@@ -11,6 +11,10 @@ class StudyNote(models.Model):
     question_id = models.CharField(max_length=64, db_index=True)
 
     text = models.TextField(blank=True, default="")
+
+    selbstbewertung = models.IntegerField(default=0)
+    count_correct = models.IntegerField(default=0)
+    count_wrong = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

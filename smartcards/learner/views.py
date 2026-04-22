@@ -3,7 +3,7 @@ from django.db.models import Count
 from poster.models import PosterCard
 from urllib.parse import unquote
 
-SESSION_KEYS = ["study_subject", "study_order", "study_index", "study_revealed"]
+SESSION_KEYS = ["study_subject", "study_order", "study_index", "study_revealed", "total_correct", "total_wrong"]
 
 def _reset_session(request):
     for k in SESSION_KEYS:
@@ -86,6 +86,18 @@ def study(request, subject):
             if index >= len(order):
                 completed = True
                 index = len(order) - 1
+                # Notizen löschen nach Abschluss
+                question_ids = [str(i) for i in order]
+                if request.user.is_authenticated:
+                    StudyNote.objects.filter(
+                        user=request.user,
+                        question_id__in=question_ids
+                    ).delete()
+                else:
+                    StudyNote.objects.filter(
+                        session_id=request.session.session_key,
+                        question_id__in=question_ids
+                    ).delete()
                 _reset_session(request)
             else:
                 request.session["study_index"] = index
@@ -107,11 +119,13 @@ def study(request, subject):
     progress = {"now": index + 1, "total": len(order)}
 
     return render(request, "learner/study.html", {
-        "subject": subject,
-        "card": card,
-        "revealed": revealed,
-        "progress": progress,
-        "completed": completed,
+    "subject": subject,
+    "card": card,
+    "revealed": revealed,
+    "progress": progress,
+    "completed": completed,
+    "total_correct": request.session.get("total_correct", 0),
+    "total_wrong": request.session.get("total_wrong", 0),
     })
 
 
@@ -142,47 +156,56 @@ from .models import StudyNote
 
 @require_http_methods(["GET", "POST"])
 def note_api(request, question_id: str):
-    """
-    Anonymous-friendly notes API.
-    Works with session_id + optional logged-in user.
-    """
-
-    # ensure session exists
     if not request.session.session_key:
         request.session.create()
     session_id = request.session.session_key
 
-    # create filter
     if request.user.is_authenticated:
         lookup = {"user": request.user, "question_id": str(question_id)}
     else:
         lookup = {"session_id": session_id, "question_id": str(question_id)}
 
-    # GET → load note
+    note, _ = StudyNote.objects.get_or_create(**lookup)
+
     if request.method == "GET":
-        note, _ = StudyNote.objects.get_or_create(**lookup)
         return JsonResponse({
             "text": note.text,
+            "selbstbewertung": note.selbstbewertung,
+            "count_correct": note.count_correct,
+            "count_wrong": note.count_wrong,
             "updated_at": note.updated_at.isoformat(),
         })
 
-    # POST → save note
     if request.method == "POST":
         try:
             body = json.loads(request.body.decode("utf-8"))
-        except:
+        except Exception:
             return HttpResponseBadRequest("invalid json")
 
-        text = body.get("text", "")
+        if "text" in body:
+            note.text = body["text"]
 
-        note, _ = StudyNote.objects.get_or_create(**lookup)
-        note.text = text
+        if "selbstbewertung" in body:
+            wert = int(body["selbstbewertung"])
+            note.selbstbewertung = wert
+            if wert == 3:
+                note.count_correct += 1
+                request.session["total_correct"] = request.session.get("total_correct", 0) + 1
+            elif wert == 1:
+                note.count_wrong += 1
+                request.session["total_wrong"] = request.session.get("total_wrong", 0) + 1
+            request.session.modified = True
+
         note.save()
-
         return JsonResponse({
             "ok": True,
+            "text": note.text,
+            "selbstbewertung": note.selbstbewertung,
+            "count_correct": note.count_correct,
+            "count_wrong": note.count_wrong,
+            "total_correct": request.session.get("total_correct", 0),
+            "total_wrong": request.session.get("total_wrong", 0),
             "updated_at": note.updated_at.isoformat(),
         })
-
-
-
+    
+    
